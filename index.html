@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0d12">
+<title>Instagram Follow Checker</title>
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#090b10;--panel:#121722;--panel2:#181f2d;--line:#2a3348;
+  --text:#f7f8fb;--sub:#9fa9bc;--accent:#8b5cf6;--accent2:#6d45dc;
+  --green:#34d399;--orange:#f59e0b;--pink:#fb7185;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);
+font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Yu Gothic UI",Meiryo,sans-serif}
+body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.wrap{max-width:860px;margin:auto;padding:18px 14px 40px}
+.head{padding:8px 2px 16px}
+h1{font-size:24px;line-height:1.2;margin:0 0 7px}
+.sub{font-size:13px;color:var(--sub);line-height:1.55}
+.card{background:linear-gradient(180deg,var(--panel),#0f141e);border:1px solid var(--line);
+border-radius:18px;padding:14px;margin-bottom:12px;box-shadow:0 10px 35px rgba(0,0,0,.16)}
+.hero{padding:18px}
+.bigbtn{display:block;width:100%;border:0;border-radius:14px;padding:15px 14px;
+font-size:16px;font-weight:800;background:var(--accent);color:#fff;cursor:pointer}
+.bigbtn:active{transform:scale(.99);background:var(--accent2)}
+.secondary{background:#232b3c}
+.smallbtn{border:0;border-radius:11px;padding:11px 12px;font-weight:700;background:#232b3c;color:#fff}
+input[type=file]{display:none}
+.sep{text-align:center;color:#657087;font-size:11px;margin:10px 0}
+.twobtn{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.notice{font-size:12px;line-height:1.6;color:#bac3d4;background:#0d121b;border:1px solid #222a3a;
+border-radius:12px;padding:11px;margin-top:12px}
+.notice.ok{border-color:#185b47;color:#93efd0;background:#0c251e}
+.notice.err{border-color:#6b262d;color:#ffb5bf;background:#2a1015}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:13px}
+.stat .n{font-size:25px;font-weight:900;letter-spacing:-.5px}
+.stat .l{font-size:11px;color:var(--sub);margin-top:3px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px}
+.tab{border:1px solid var(--line);background:#1b2230;color:#e9edf6;border-radius:12px;
+padding:11px 7px;font-size:12px;font-weight:800}
+.tab.active{background:var(--accent);border-color:var(--accent)}
+.search{width:100%;background:#0c1119;border:1px solid var(--line);color:#fff;border-radius:12px;
+font-size:16px;padding:12px 13px;outline:none;margin-bottom:10px}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.meta{font-size:11px;color:var(--sub);margin:6px 2px 8px}
+.list{display:flex;flex-direction:column;gap:7px}
+.item{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#0d121b;
+border:1px solid #20283a;border-radius:13px;padding:10px 11px}
+.user{min-width:0}
+.user a{color:#e6dcff;text-decoration:none;font-weight:750;word-break:break-all}
+.badge{font-size:10px;font-weight:800;border-radius:999px;padding:5px 8px;white-space:nowrap}
+.b-mutual{background:#10392f;color:#8eebc8}
+.b-notback{background:#412b0c;color:#ffd18a}
+.b-youback{background:#431b29;color:#ffabc0}
+.hidden{display:none!important}
+.foot{font-size:11px;color:#69758d;text-align:center;padding:8px 6px 0;line-height:1.5}
+.tip{font-size:12px;color:#c7cede;line-height:1.6}
+.tip b{color:white}
+@media(min-width:700px){
+  .stats{grid-template-columns:repeat(4,1fr)}
+  .tabs{grid-template-columns:repeat(4,1fr)}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <h1>Instagram Follow Checker</h1>
+    <div class="sub">iPhone / Chrome対応。Instagramの書き出しデータを端末内だけで比較します。</div>
+  </div>
+
+  <div class="card hero">
+    <label class="bigbtn" for="zipInput">InstagramのZIPを選ぶ</label>
+    <input id="zipInput" type="file" accept=".zip,application/zip">
+    <div class="sep">ZIPで読めない場合</div>
+    <div class="twobtn">
+      <label class="smallbtn" for="followersInput">フォロワーを選ぶ</label>
+      <label class="smallbtn" for="followingInput">フォロー中を選ぶ</label>
+    </div>
+    <input id="followersInput" type="file" multiple accept=".json,.html,application/json,text/html">
+    <input id="followingInput" type="file" multiple accept=".json,.html,application/json,text/html">
+    <div id="status" class="notice">
+      Chromeでこのページを開き、「InstagramのZIPを選ぶ」を押してください。
+    </div>
+  </div>
+
+  <div id="results" class="hidden">
+    <div class="stats">
+      <div class="stat"><div id="cFollowing" class="n">0</div><div class="l">フォロー中</div></div>
+      <div class="stat"><div id="cFollowers" class="n">0</div><div class="l">フォロワー</div></div>
+      <div class="stat"><div id="cMutual" class="n">0</div><div class="l">相互フォロー</div></div>
+      <div class="stat"><div id="cNotBack" class="n">0</div><div class="l">フォロバされてない</div></div>
+    </div>
+
+    <div class="card">
+      <div class="tabs">
+        <button class="tab active" data-mode="notback">フォロバなし</button>
+        <button class="tab" data-mode="youback">自分が未返し</button>
+        <button class="tab" data-mode="mutual">相互</button>
+        <button class="tab" data-mode="all">全件</button>
+      </div>
+
+      <input id="search" class="search" type="search" placeholder="ユーザー名を検索">
+
+      <div class="actions">
+        <button id="shareCsv" class="bigbtn">CSVを保存/共有</button>
+        <button id="clearBtn" class="bigbtn secondary">クリア</button>
+      </div>
+
+      <div id="listMeta" class="meta"></div>
+      <div id="list" class="list"></div>
+    </div>
+  </div>
+
+  <div class="card tip">
+    <b>非公開アカウントも判定対象。</b><br>
+    自分のフォロー中/フォロワー一覧に含まれていれば、公開・非公開に関係なく相互判定できます。
+  </div>
+
+  <div class="foot">ID・パスワード不要 / 外部送信なし / 端末内処理</div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+let followers=new Set(), following=new Set(), currentMode='notback';
+
+function norm(v){
+  if(!v) return null;
+  v=String(v).trim();
+  try{
+    if(/^https?:\/\//i.test(v)){
+      const u=new URL(v);
+      const p=u.pathname.split('/').filter(Boolean);
+      if(p[0]) v=p[0];
+    }
+  }catch{}
+  v=v.replace(/^@/,'').replace(/\/+$/,'').trim();
+  return /^[A-Za-z0-9._]{1,30}$/.test(v)?v.toLowerCase():null;
+}
+function merge(set,vals){for(const v of vals)set.add(v)}
+function classify(path){
+  const b=path.replace(/\\/g,'/').split('/').pop().toLowerCase();
+  if(/^followers(?:_\d+)?\.(json|html)$/.test(b)) return 'followers';
+  if(/^following\.(json|html)$/.test(b)) return 'following';
+  return null;
+}
+function parseJSON(text){
+  const out=new Set(), seen=new Set();
+  const root=JSON.parse(text);
+  function walk(x){
+    if(x==null) return;
+    if(typeof x==='object'){
+      if(seen.has(x)) return;
+      seen.add(x);
+    }
+    if(Array.isArray(x)){x.forEach(walk);return}
+    if(typeof x!=='object') return;
+    if(Array.isArray(x.string_list_data)){
+      for(const it of x.string_list_data){
+        if(!it||typeof it!=='object') continue;
+        const u=norm(it.value)||norm(it.href);
+        if(u) out.add(u);
+      }
+    }
+    for(const v of Object.values(x)) walk(v);
+  }
+  walk(root); return out;
+}
+function parseHTML(text){
+  const out=new Set();
+  const doc=new DOMParser().parseFromString(text,'text/html');
+  doc.querySelectorAll('a').forEach(a=>{
+    const href=a.getAttribute('href')||'';
+    const txt=a.textContent.trim();
+    const u=/instagram\.com/i.test(href)?(norm(href)||norm(txt)):norm(txt);
+    if(u) out.add(u);
+  });
+  return out;
+}
+function parseContent(name,text){
+  if(/\.json$/i.test(name)) return parseJSON(text);
+  if(/\.html$/i.test(name)) return parseHTML(text);
+  return new Set();
+}
+async function inflateRaw(bytes){
+  if(typeof DecompressionStream==='undefined') throw new Error('このiPhoneではZIPを直接展開できません。下の手順でZIPを展開してJSONを選んでください。');
+  let ds;
+  try{ds=new DecompressionStream('deflate-raw')}catch{throw new Error('ZIP直接読込に未対応です。ZIPを「ファイル」アプリで展開してJSONを選んでください。')}
+  const stream=new Blob([bytes]).stream().pipeThrough(ds);
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+async function unzip(file){
+  const a=new Uint8Array(await file.arrayBuffer());
+  const dv=new DataView(a.buffer,a.byteOffset,a.byteLength);
+  let e=-1, min=Math.max(0,a.length-65557);
+  for(let i=a.length-22;i>=min;i--){if(dv.getUint32(i,true)===0x06054b50){e=i;break}}
+  if(e<0) throw new Error('ZIPを認識できません。');
+  const total=dv.getUint16(e+10,true), cd=dv.getUint32(e+16,true);
+  const dec=new TextDecoder('utf-8'); let p=cd, found=0;
+  for(let n=0;n<total;n++){
+    if(dv.getUint32(p,true)!==0x02014b50) break;
+    const method=dv.getUint16(p+10,true), compSize=dv.getUint32(p+20,true);
+    const nl=dv.getUint16(p+28,true), xl=dv.getUint16(p+30,true), cl=dv.getUint16(p+32,true);
+    const local=dv.getUint32(p+42,true);
+    const name=dec.decode(a.slice(p+46,p+46+nl));
+    const type=classify(name);
+    if(type){
+      if(dv.getUint32(local,true)!==0x04034b50) throw new Error('ZIP内のファイルを読み込めません。');
+      const lnl=dv.getUint16(local+26,true), lxl=dv.getUint16(local+28,true);
+      const start=local+30+lnl+lxl, comp=a.slice(start,start+compSize);
+      let raw;
+      if(method===0) raw=comp;
+      else if(method===8) raw=await inflateRaw(comp);
+      else throw new Error('未対応のZIP圧縮方式です。');
+      const vals=parseContent(name,dec.decode(raw));
+      merge(type==='followers'?followers:following,vals);
+      found++;
+    }
+    p+=46+nl+xl+cl;
+  }
+  if(!found) throw new Error('followers / following のファイルがZIP内に見つかりません。');
+}
+async function readFiles(files,type){
+  let used=0;
+  for(const f of files){
+    try{
+      const vals=parseContent(f.name,await f.text());
+      merge(type==='followers'?followers:following,vals); used++;
+    }catch(e){throw new Error(f.name+' を解析できません。')}
+  }
+  if(!used) throw new Error('ファイルが選択されていません。');
+}
+function data(){
+  const f=[...followers], g=[...following];
+  return {
+    mutual:g.filter(x=>followers.has(x)),
+    notback:g.filter(x=>!followers.has(x)),
+    youback:f.filter(x=>!following.has(x)),
+    all:[...new Set([...g,...f])]
+  };
+}
+function statusFor(u){
+  const a=following.has(u), b=followers.has(u);
+  if(a&&b) return ['相互','b-mutual'];
+  if(a&&!b) return ['フォロバなし','b-notback'];
+  return ['自分が未返し','b-youback'];
+}
+function esc(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function render(){
+  const d=data();
+  $('#results').classList.remove('hidden');
+  $('#cFollowing').textContent=following.size.toLocaleString();
+  $('#cFollowers').textContent=followers.size.toLocaleString();
+  $('#cMutual').textContent=d.mutual.length.toLocaleString();
+  $('#cNotBack').textContent=d.notback.length.toLocaleString();
+  renderList();
+}
+function renderList(){
+  const d=data(), q=$('#search').value.trim().toLowerCase();
+  const arr=(d[currentMode]||[]).filter(x=>x.includes(q)).sort((a,b)=>a.localeCompare(b));
+  $('#listMeta').textContent=arr.length.toLocaleString()+'件表示';
+  const frag=document.createDocumentFragment();
+  arr.forEach(u=>{
+    const [label,cls]=statusFor(u);
+    const div=document.createElement('div'); div.className='item';
+    div.innerHTML='<div class="user"><a target="_blank" rel="noopener" href="https://www.instagram.com/'+encodeURIComponent(u)+'/">@'+esc(u)+'</a></div><span class="badge '+cls+'">'+label+'</span>';
+    frag.appendChild(div);
+  });
+  $('#list').replaceChildren(frag);
+}
+function setStatus(msg,type=''){
+  const e=$('#status'); e.textContent=msg; e.className='notice '+type;
+}
+$('#zipInput').addEventListener('change',async e=>{
+  const f=e.target.files[0]; if(!f)return;
+  try{
+    followers=new Set(); following=new Set();
+    setStatus('ZIPを読み込み中…');
+    await unzip(f); render();
+    setStatus('読込完了：フォロー中 '+following.size.toLocaleString()+'件 / フォロワー '+followers.size.toLocaleString()+'件','ok');
+  }catch(err){setStatus(err.message||String(err),'err')}
+});
+$('#followersInput').addEventListener('change',async e=>{
+  try{await readFiles([...e.target.files],'followers'); if(followers.size&&following.size)render(); setStatus('フォロワー '+followers.size.toLocaleString()+'件を読み込みました。','ok')}
+  catch(err){setStatus(err.message||String(err),'err')}
+});
+$('#followingInput').addEventListener('change',async e=>{
+  try{await readFiles([...e.target.files],'following'); if(followers.size&&following.size)render(); setStatus('フォロー中 '+following.size.toLocaleString()+'件を読み込みました。','ok')}
+  catch(err){setStatus(err.message||String(err),'err')}
+});
+$$('.tab').forEach(b=>b.addEventListener('click',()=>{
+  $$('.tab').forEach(x=>x.classList.remove('active')); b.classList.add('active'); currentMode=b.dataset.mode; renderList();
+}));
+$('#search').addEventListener('input',renderList);
+$('#clearBtn').addEventListener('click',()=>{
+  followers=new Set();following=new Set();
+  $('#results').classList.add('hidden');
+  $('#zipInput').value=$('#followersInput').value=$('#followingInput').value='';
+  setStatus('クリアしました。');
+});
+$('#shareCsv').addEventListener('click',async()=>{
+  const d=data(), arr=(d[currentMode]||[]).sort((a,b)=>a.localeCompare(b));
+  const rows=[['username','status','profile_url']];
+  arr.forEach(u=>rows.push([u,statusFor(u)[0],'https://www.instagram.com/'+u+'/']));
+  const csv='\uFEFF'+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const file=new File([blob],'instagram_'+currentMode+'.csv',{type:'text/csv'});
+  try{
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({files:[file],title:'Instagram Follow Checker'});
+      return;
+    }
+  }catch(e){}
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=file.name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+});
+</script>
+</body>
+</html>
