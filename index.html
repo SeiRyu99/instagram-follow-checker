@@ -121,12 +121,12 @@ border:1px solid #20283a;border-radius:13px;padding:10px 11px}
     自分のフォロー中/フォロワー一覧に含まれていれば、公開・非公開に関係なく相互判定できます。
   </div>
 
-  <div class="foot">ID・パスワード不要 / 外部送信なし / 端末内処理</div>
+  <div class="foot">ID・パスワード不要 / 外部送信なし / 端末内処理 / v2.1</div>
 </div>
 
 <script>
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-let followers=new Set(), following=new Set(), currentMode='notback';
+let followers=new Set(), following=new Set(), currentMode='notback', loadedFollowerFiles=[], loadedFollowingFiles=[];
 
 function norm(v){
   if(!v) return null;
@@ -135,7 +135,8 @@ function norm(v){
     if(/^https?:\/\//i.test(v)){
       const u=new URL(v);
       const p=u.pathname.split('/').filter(Boolean);
-      if(p[0]) v=p[0];
+      if(p[0]==='_u' && p[1]) v=p[1];
+      else if(p[0]) v=p[0];
     }
   }catch{}
   v=v.replace(/^@/,'').replace(/\/+$/,'').trim();
@@ -145,7 +146,7 @@ function merge(set,vals){for(const v of vals)set.add(v)}
 function classify(path){
   const b=path.replace(/\\/g,'/').split('/').pop().toLowerCase();
   if(/^followers(?:_\d+)?\.(json|html)$/.test(b)) return 'followers';
-  if(/^following\.(json|html)$/.test(b)) return 'following';
+  if(/^following(?:_\d+)?\.(json|html)$/.test(b)) return 'following';
   return null;
 }
 function parseJSON(text){
@@ -176,8 +177,12 @@ function parseHTML(text){
   doc.querySelectorAll('a').forEach(a=>{
     const href=a.getAttribute('href')||'';
     const txt=a.textContent.trim();
-    const u=/instagram\.com/i.test(href)?(norm(href)||norm(txt)):norm(txt);
-    if(u) out.add(u);
+    const u=norm(txt) || (/instagram\.com/i.test(href) ? norm(href) : null);
+    if(u && u!=='instagram') out.add(u);
+  });
+  doc.querySelectorAll('h2,h3').forEach(h=>{
+    const u=norm(h.textContent.trim());
+    if(u && !['followers','following','instagram'].includes(u)) out.add(u);
   });
   return out;
 }
@@ -218,6 +223,7 @@ async function unzip(file){
       else throw new Error('未対応のZIP圧縮方式です。');
       const vals=parseContent(name,dec.decode(raw));
       merge(type==='followers'?followers:following,vals);
+      (type==='followers'?loadedFollowerFiles:loadedFollowingFiles).push(name);
       found++;
     }
     p+=46+nl+xl+cl;
@@ -229,7 +235,9 @@ async function readFiles(files,type){
   for(const f of files){
     try{
       const vals=parseContent(f.name,await f.text());
-      merge(type==='followers'?followers:following,vals); used++;
+      merge(type==='followers'?followers:following,vals);
+      (type==='followers'?loadedFollowerFiles:loadedFollowingFiles).push(f.name);
+      used++;
     }catch(e){throw new Error(f.name+' を解析できません。')}
   }
   if(!used) throw new Error('ファイルが選択されていません。');
@@ -250,7 +258,12 @@ function statusFor(u){
   return ['自分が未返し','b-youback'];
 }
 function esc(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function validateLoaded(){
+  if(followers.size===0) throw new Error('フォロワー一覧を0件として読み込みました。正しい followers_*.json/html が必要です。');
+  if(following.size===0) throw new Error('フォロー中一覧を0件として読み込みました。正しい following*.json/html が必要です。');
+}
 function render(){
+  validateLoaded();
   const d=data();
   $('#results').classList.remove('hidden');
   $('#cFollowing').textContent=following.size.toLocaleString();
@@ -278,10 +291,10 @@ function setStatus(msg,type=''){
 $('#zipInput').addEventListener('change',async e=>{
   const f=e.target.files[0]; if(!f)return;
   try{
-    followers=new Set(); following=new Set();
+    followers=new Set(); following=new Set(); loadedFollowerFiles=[]; loadedFollowingFiles=[];
     setStatus('ZIPを読み込み中…');
     await unzip(f); render();
-    setStatus('読込完了：フォロー中 '+following.size.toLocaleString()+'件 / フォロワー '+followers.size.toLocaleString()+'件','ok');
+    setStatus('読込完了：フォロー中 '+following.size.toLocaleString()+'件 / フォロワー '+followers.size.toLocaleString()+'件（following '+loadedFollowingFiles.length+'ファイル / followers '+loadedFollowerFiles.length+'ファイル）','ok');
   }catch(err){setStatus(err.message||String(err),'err')}
 });
 $('#followersInput').addEventListener('change',async e=>{
@@ -297,7 +310,7 @@ $$('.tab').forEach(b=>b.addEventListener('click',()=>{
 }));
 $('#search').addEventListener('input',renderList);
 $('#clearBtn').addEventListener('click',()=>{
-  followers=new Set();following=new Set();
+  followers=new Set();following=new Set();loadedFollowerFiles=[];loadedFollowingFiles=[];
   $('#results').classList.add('hidden');
   $('#zipInput').value=$('#followersInput').value=$('#followingInput').value='';
   setStatus('クリアしました。');
